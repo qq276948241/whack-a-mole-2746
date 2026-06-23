@@ -46,8 +46,43 @@ class Mole:
     GOLDEN = "golden"
     HARDHAT = "hardhat"
 
+    SPECS = {
+        NORMAL: {
+            "hits": 1,
+            "score": 10,
+            "body": MOLE_BROWN,
+            "outline": MOLE_DARK,
+            "stay_adj": 0,
+            "rise_adj": 0,
+        },
+        GOLDEN: {
+            "hits": 1,
+            "score": 50,
+            "body": GOLD,
+            "outline": GOLD_DARK,
+            "stay_adj": -8,
+            "rise_adj": +1,
+        },
+        HARDHAT: {
+            "hits": 2,
+            "score": 20,
+            "body": MOLE_BROWN,
+            "outline": MOLE_DARK,
+            "stay_adj": +20,
+            "rise_adj": -1,
+        },
+    }
+
     def __init__(self, mole_type="normal"):
         self.mole_type = mole_type
+        spec = self.SPECS[mole_type]
+        self.body_c = spec["body"]
+        self.outline_c = spec["outline"]
+        self.base_score_val = spec["score"]
+        self.hits_remaining = spec["hits"]
+        self.stay_adj = spec["stay_adj"]
+        self.rise_adj = spec["rise_adj"]
+
         self.max_height = 70
         self.current_height = 0
         self.state = "rising"
@@ -55,28 +90,23 @@ class Mole:
         self.escaped = False
         self.speed = 3
         self.stay_counter = 0
-        self.stay_time = 30
-        self.hits_remaining = 2 if mole_type == self.HARDHAT else 1
+        self.stay_time = 30 + self.stay_adj
         self.hat_cracked = False
-        if mole_type == self.GOLDEN:
-            self.stay_time = max(10, self.stay_time - 5)
+
+    def apply_difficulty(self, progress):
+        base_speed = 2 + int(3 * progress) + self.rise_adj
+        self.speed = max(1, base_speed)
+        base_stay = 35 - int(20 * progress)
+        self.stay_time = max(10, base_stay + self.stay_adj)
 
     def body_color(self):
-        if self.mole_type == self.GOLDEN:
-            return GOLD
-        return MOLE_BROWN
+        return self.body_c
 
     def outline_color(self):
-        if self.mole_type == self.GOLDEN:
-            return GOLD_DARK
-        return MOLE_DARK
+        return self.outline_c
 
     def base_score(self):
-        if self.mole_type == self.GOLDEN:
-            return 50
-        if self.mole_type == self.HARDHAT:
-            return 20
-        return 10
+        return self.base_score_val
 
     def draw(self, screen, center_x, ground_y):
         h = self.current_height
@@ -208,14 +238,12 @@ def random_mole_type():
 
 class ScoreManager:
     def __init__(self):
-        self.score = 0
-        self.combo = 0
-        self.floating_texts = []
+        self.reset()
 
     def reset(self):
         self.score = 0
         self.combo = 0
-        self.floating_texts.clear()
+        self.floating_texts = []
 
     def register_hit(self, mole, center_x, ground_y):
         if not mole.hit:

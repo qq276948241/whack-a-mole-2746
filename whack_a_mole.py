@@ -17,6 +17,7 @@ pygame.init()
 def game_loop(screen, clock, fonts, sounds):
     holes = create_holes()
     score_mgr = ScoreManager()
+    score_mgr.reset()
     start_time = time.time()
     spawn_timer = 0
     spawn_interval = 60
@@ -52,8 +53,7 @@ def game_loop(screen, clock, fonts, sounds):
             if empty_holes:
                 hole = random.choice(empty_holes)
                 hole.mole = Mole(random_mole_type())
-                hole.mole.speed = 2 + int(3 * progress)
-                hole.mole.stay_time = max(10, 35 - int(20 * progress))
+                hole.mole.apply_difficulty(progress)
 
         hit_any = False
         for hole in holes:
@@ -75,12 +75,9 @@ def game_loop(screen, clock, fonts, sounds):
                                 make_combo_sound(score_mgr.combo).play()
                         elif dink:
                             sounds[score_mgr.register_hardhat_dink(center_x, ground_y)].play()
-                hole_center_x = hole.x + hole.width // 2
                 if not hole.mole.update():
                     if hole.mole.escaped and not hole.mole.hit:
-                        score_mgr.break_combo(
-                            hole_center_x, hole.y, reason="escape"
-                        )
+                        score_mgr.break_combo(center_x, hole.y, reason="escape")
                     hole.mole = None
             hole.draw(screen)
 
